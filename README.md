@@ -1,7 +1,7 @@
 # Compare Loci
 
 Zachary McCaw <br>
-Updated: 2022-22-02
+Updated: 2022-02-22
 
 
 
