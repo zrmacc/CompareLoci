@@ -41,7 +41,8 @@ OverlapIndices <- function(
 #' @param start_name Name of column containing locus start position.
 #' @param end_name Name of column containing locus end position.
 #' @return Data.frame. 
-#' @importFrom dplyr "%>%"
+#' @importFrom dplyr all_of "%>%"
+#' @importFrom rlang ":="
 #' @export 
 
 FindOverlaps <- function(
@@ -54,13 +55,43 @@ FindOverlaps <- function(
   if (!methods::is(left, "data.frame") & !methods::is(right, "data.frame")) {
     stop("Inputs should be data frames.")
   }
-  out <- left
-  out$left_idx <- seq_len(nrow(out))
+  
+  # Prefix left (chr, start, end) by left.
+  left_chr_name <- paste0("left_", chr_name)
+  left_start_name <- paste0("left_", start_name)
+  left_end_name <- paste0("left_", end_name)
+  out_left <- left %>%
+    dplyr::rename(
+      !!left_chr_name := all_of(chr_name),
+      !!left_start_name := all_of(start_name),
+      !!left_end_name := all_of(end_name)
+    )
+  
+  # Overlaps.
+  out_left$left_idx <- seq_len(nrow(out_left))
+  right$right_idx <- seq_len(nrow(right))
   overlap_indices <- OverlapIndices(
     left, right, chr_name, start_name, end_name)
+  
+  # Prefix right (chr, start, end) by right.
+  right_chr_name <- paste0("right_", chr_name)
+  right_start_name <- paste0("right_", start_name)
+  right_end_name <- paste0("right_", end_name)
+  out_right <- right %>%
+    dplyr::rename(
+      !!right_chr_name := all_of(chr_name),
+      !!right_start_name := all_of(start_name),
+      !!right_end_name := all_of(end_name)
+    )
+  
+  # Inner join overlaps with right.
+  out_overlap <- overlap_indices %>%
+    dplyr::inner_join(out_right, by = "right_idx")
+  
+  # Left join left loci with overlaps.
   right_idx <- NULL
-  out <- out %>%
-    dplyr::left_join(overlap_indices, by = "left_idx") %>%
+  out <- out_left %>%
+    dplyr::left_join(out_overlap, by = "left_idx") %>%
     dplyr::mutate(
       any_overlaps = !is.na(right_idx)
     )
