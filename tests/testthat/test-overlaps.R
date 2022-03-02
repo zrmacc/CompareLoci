@@ -87,10 +87,10 @@ test_that("Find overlaps.", {
   )
   
   exp <- data.frame(
+    left_idx = c(1, 2, 3),
     left_chr = c(1, 1, 1),
     left_start = c(1, 100, 1000),
     left_end = c(10, 110, 1010),
-    left_idx = c(1, 2, 3),
     right_idx = c(1, 2, NA),
     right_chr = c(1, 1, NA),
     right_start = c(5, 105, NA),
@@ -102,10 +102,10 @@ test_that("Find overlaps.", {
   
   # Reversing arguments to FindOverlaps.
   exp <- data.frame(
+    left_idx = c(1, 2, 3),
     left_chr = c(1, 1, 1),
     left_start = c(5, 105, 1011),
     left_end = c(15, 108, 1015),
-    left_idx = c(1, 2, 3),
     right_idx = c(1, 2, NA),
     right_chr = c(1, 1, NA),
     right_start = c(1, 100, NA),
@@ -129,10 +129,10 @@ test_that("Find overlaps.", {
   )
   
   exp <- data.frame(
+    left_idx = 1,
     left_chr = 1,
     left_start = 1,
     left_end = 10,
-    left_idx = 1,
     right_idx = as.integer(NA),
     right_chr = as.integer(NA),
     right_start = as.integer(NA),

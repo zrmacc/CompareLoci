@@ -5,21 +5,27 @@
 #'
 #' @param left Data.frame containing the first set of loci.
 #' @param right Data.frame containing the second set of loci.
-#' @param chr_name Name of column containing chromosome.
-#' @param start_name Name of column containing locus start position.
-#' @param end_name Name of column containing locus end position.
+#' @param left_chr_name Name of column containing chromosome.
+#' @param left_start_name Name of column containing locus start position.
+#' @param left_end_name Name of column containing locus end position.
+#' @param right_chr_name Name of column containing chromosome.
+#' @param right_start_name Name of column containing locus start position.
+#' @param right_end_name Name of column containing locus end position.
 #' @return Data.frame.
 #' @export 
 
 OverlapIndices <- function(
     left,
     right,
-    chr_name = "chr",
-    start_name = "start",
-    end_name = "end"
+    left_chr_name = "chr",
+    left_start_name = "start",
+    left_end_name = "end",
+    right_chr_name = "chr",
+    right_start_name = "start",
+    right_end_name = "end"
 ) {
-  gr1 <- DF2GR(left, chr_name, start_name, end_name)
-  gr2 <- DF2GR(right, chr_name, start_name, end_name)
+  gr1 <- DF2GR(left, left_chr_name, left_start_name, left_end_name)
+  gr2 <- DF2GR(right, right_chr_name, right_start_name, right_end_name)
   indices <- as.data.frame(GenomicRanges::findOverlaps(gr1, gr2))
   colnames(indices) <- c("left_idx", "right_idx")
   return(indices)
@@ -37,63 +43,69 @@ OverlapIndices <- function(
 #'
 #' @param left Data.frame containing the first set of loci.
 #' @param right Data.frame containing the second set of loci.
-#' @param chr_name Name of column containing chromosome.
-#' @param start_name Name of column containing locus start position.
-#' @param end_name Name of column containing locus end position.
+#' @param left_chr_name Name of column containing chromosome.
+#' @param left_start_name Name of column containing locus start position.
+#' @param left_end_name Name of column containing locus end position.
+#' @param right_chr_name Name of column containing chromosome.
+#' @param right_start_name Name of column containing locus start position.
+#' @param right_end_name Name of column containing locus end position.
 #' @return Data.frame. 
 #' @importFrom dplyr all_of "%>%"
-#' @importFrom rlang ":="
 #' @export 
 
 FindOverlaps <- function(
     left,
     right,
-    chr_name = "chr",
-    start_name = "start",
-    end_name = "end"
+    left_chr_name = "chr",
+    left_start_name = "start",
+    left_end_name = "end",
+    right_chr_name = "chr",
+    right_start_name = "start",
+    right_end_name = "end"
 ) {
   if (!methods::is(left, "data.frame") & !methods::is(right, "data.frame")) {
     stop("Inputs should be data frames.")
   }
   
-  # Prefix left (chr, start, end) by left.
-  left_chr_name <- paste0("left_", chr_name)
-  left_start_name <- paste0("left_", start_name)
-  left_end_name <- paste0("left_", end_name)
-  out_left <- left %>%
+  # Rename chr, start, end.
+  left <- left %>%
     dplyr::rename(
-      !!left_chr_name := all_of(chr_name),
-      !!left_start_name := all_of(start_name),
-      !!left_end_name := all_of(end_name)
+      chr = all_of(left_chr_name),
+      start = all_of(left_start_name),
+      end = all_of(left_end_name)
+    )
+  right <- right %>%
+    dplyr::rename(
+      chr = all_of(right_chr_name),
+      start = all_of(right_start_name),
+      end = all_of(right_end_name)
     )
   
   # Overlaps.
-  out_left$left_idx <- seq_len(nrow(out_left))
-  right$right_idx <- seq_len(nrow(right))
-  overlap_indices <- OverlapIndices(
-    left, right, chr_name, start_name, end_name)
+  overlap_indices <- OverlapIndices(left, right)
   
-  # Prefix right (chr, start, end) by right.
-  right_chr_name <- paste0("right_", chr_name)
-  right_start_name <- paste0("right_", start_name)
-  right_end_name <- paste0("right_", end_name)
-  out_right <- right %>%
-    dplyr::rename(
-      !!right_chr_name := all_of(chr_name),
-      !!right_start_name := all_of(start_name),
-      !!right_end_name := all_of(end_name)
-    )
+  # Prefix right.
+  right$idx <- seq_len(nrow(right))
+  colnames(right) <- paste0("right_", colnames(right))
   
   # Inner join overlaps with right.
-  out_overlap <- overlap_indices %>%
-    dplyr::inner_join(out_right, by = "right_idx")
+  overlap_indices <- overlap_indices %>%
+    dplyr::inner_join(right, by = "right_idx")
+  
+  # Prefix left.
+  left$idx <- seq_len(nrow(left))
+  colnames(left) <- paste0("left_", colnames(left))
   
   # Left join left loci with overlaps.
   right_idx <- NULL
-  out <- out_left %>%
-    dplyr::left_join(out_overlap, by = "left_idx") %>%
+  out <- left %>%
+    dplyr::left_join(overlap_indices, by = "left_idx") %>%
     dplyr::mutate(
       any_overlaps = !is.na(right_idx)
+    ) %>%
+    dplyr::relocate(
+      "left_idx", "left_chr", "left_start", "left_end",
+      "right_idx", "right_chr", "right_start", "right_end"
     )
   return(out)
 }
@@ -111,21 +123,43 @@ FindOverlaps <- function(
 #' 
 #' @param left Data.frame containing the first set of loci.
 #' @param right Data.frame containing the second set of loci.
-#' @param chr_name Name of column containing chromosome.
-#' @param start_name Name of column containing locus start position.
-#' @param end_name Name of column containing locus end position.
+#' @param left_chr_name Name of column containing chromosome.
+#' @param left_start_name Name of column containing locus start position.
+#' @param left_end_name Name of column containing locus end position.
+#' @param right_chr_name Name of column containing chromosome.
+#' @param right_start_name Name of column containing locus start position.
+#' @param right_end_name Name of column containing locus end position.
 #' @return Data.frame.
+#' @importFrom dplyr all_of "%>%"
 #' @export 
 
 CalcOverlapStats <- function(
     left,
     right,
-    chr_name = "chr",
-    start_name = "start",
-    end_name = "end"
+    left_chr_name = "chr",
+    left_start_name = "start",
+    left_end_name = "end",
+    right_chr_name = "chr",
+    right_start_name = "start",
+    right_end_name = "end"
 ) {
   
-  overlaps <- FindOverlaps(left, right, chr_name, start_name, end_name)
+  # Rename chr, start, end.
+  left <- left %>%
+    dplyr::rename(
+      chr = all_of(left_chr_name),
+      start = all_of(left_start_name),
+      end = all_of(left_end_name)
+    )
+  right <- right %>%
+    dplyr::rename(
+      chr = all_of(right_chr_name),
+      start = all_of(right_start_name),
+      end = all_of(right_end_name)
+    )
+  
+  # Find overlaps.
+  overlaps <- FindOverlaps(left, right)
   n_left <- nrow(left)
   n_right <- nrow(right)
   

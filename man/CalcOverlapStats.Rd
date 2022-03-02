@@ -7,9 +7,12 @@
 CalcOverlapStats(
   left,
   right,
-  chr_name = "chr",
-  start_name = "start",
-  end_name = "end"
+  left_chr_name = "chr",
+  left_start_name = "start",
+  left_end_name = "end",
+  right_chr_name = "chr",
+  right_start_name = "start",
+  right_end_name = "end"
 )
 }
 \arguments{
@@ -17,11 +20,17 @@ CalcOverlapStats(
 
 \item{right}{Data.frame containing the second set of loci.}
 
-\item{chr_name}{Name of column containing chromosome.}
+\item{left_chr_name}{Name of column containing chromosome.}
 
-\item{start_name}{Name of column containing locus start position.}
+\item{left_start_name}{Name of column containing locus start position.}
 
-\item{end_name}{Name of column containing locus end position.}
+\item{left_end_name}{Name of column containing locus end position.}
+
+\item{right_chr_name}{Name of column containing chromosome.}
+
+\item{right_start_name}{Name of column containing locus start position.}
+
+\item{right_end_name}{Name of column containing locus end position.}
 }
 \value{
 Data.frame.
